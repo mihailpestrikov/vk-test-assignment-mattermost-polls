@@ -1,0 +1,25 @@
+services:
+  poll-bot:
+    build:
+      context: .
+      dockerfile: docker/bot/Dockerfile
+    depends_on:
+      - tarantool
+    environment:
+      - TARANTOOL_HOST=tarantool
+      - TARANTOOL_PORT=3301
+      - MATTERMOST_URL=${MATTERMOST_URL:-http://mattermost:8065}
+      - MATTERMOST_TOKEN=${MATTERMOST_TOKEN}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./logs:/app/logs
+
+  tarantool:
+    image: tarantool/tarantool:latest
+    volumes:
+      - ./docker/tarantool/init.lua:/opt/tarantool/init.lua
+      - tarantool_data:/var/lib/tarantool
+
+volumes:
+  tarantool_data:
