@@ -88,8 +88,6 @@ end
 
 bootstrap()
 
--- Выдача прав гостевому пользователю (для разработки)
--- Для продакшена используйте созданного выше пользователя
 box.schema.user.grant('guest', 'read,write,execute', 'universe', nil, {if_not_exists = true})
 
 print('Tarantool initialization completed successfully')
