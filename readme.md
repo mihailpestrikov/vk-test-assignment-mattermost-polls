@@ -114,7 +114,7 @@ make dev
 ```
 
 Вывод:
-<img src="img/img.png" width="400">
+<br><img src="img/img.png" width="400">
 
 ### Голосование
 Команда:
@@ -123,7 +123,7 @@ make dev
 ```
 
 Вывод (виден только проголосовавшему):
-<img src="img/img_1.png" width="300">
+<br><img src="img/img_1.png" width="300">
 
 ### Просмотр результатов
 Команда:
@@ -132,7 +132,7 @@ make dev
 ```
 
 Вывод (для автора голосования - виден всем, для участника - только проголосовавшему:
-<img src="img/img_2.png" width="400">
+<br><img src="img/img_2.png" width="400">
 
 ### Завершение голосования
 Команда:
@@ -141,7 +141,7 @@ make dev
 ```
 
 Вывод:
-<img src="img/img_3.png" width="400">
+<br><img src="img/img_3.png" width="400">
 
 ### Информация о голосовании
 Команда:
@@ -150,7 +150,7 @@ make dev
 ```
 
 Вывод (только запросившему):
-<img src="img/img_4.png" width="400">
+<br><img src="img/img_4.png" width="400">
 
 ### Удаление голосования
 Команда:
@@ -159,7 +159,7 @@ make dev
 ```
 
 Вывод (виден только создателю):
-<img src="img/img_5.png" width="400"><br>
+<br><img src="img/img_5.png" width="400"><br>
 <img src="img/img_6.png" width="400">
 
 ### Справка по командам
