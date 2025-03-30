@@ -1,3 +1,11 @@
+# Сборка Docker-образов
+build:
+	docker-compose build
+
+# Сборка только образа бота
+build-bot:
+	docker-compose build --no-cache --progress=plain poll-bot
+
 # Запуск только бота и Tarantool
 run:
 	docker-compose up -d

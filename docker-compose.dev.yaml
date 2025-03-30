@@ -23,6 +23,8 @@ services:
       - MM_SQLSETTINGS_DRIVERNAME=postgres
       - MM_SQLSETTINGS_DATASOURCE=postgres://mmuser:mmtest@postgres:5432/mattermost?sslmode=disable
       - MM_SQLSETTINGS_CONNECTION_MAX_IDLE_TIME=30000
+      - MM_SERVICESETTINGS_ALLOWEDUNTRUSTEDINTERNALCONNECTIONS=poll-bot
+      - MM_SERVICESETTINGS_ENABLECOMMANDS=true
     ports:
       - "8065:8065"
     volumes:

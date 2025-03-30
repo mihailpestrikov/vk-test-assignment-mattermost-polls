@@ -21,6 +21,14 @@ services:
     volumes:
       - ./docker/tarantool/init.lua:/opt/tarantool/init.lua
       - tarantool_data:/var/lib/tarantool
+    ports:
+      - "3301:3301"
+    healthcheck:
+      test: [ "CMD", "tarantool", "-e", "require('tarantool').ping()" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    command: tarantool /opt/tarantool/init.lua
 
 volumes:
   tarantool_data:
