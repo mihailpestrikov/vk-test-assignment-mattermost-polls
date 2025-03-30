@@ -1,15 +1,16 @@
-box.cfg {
-    listen = 3301,
-    wal_dir = '/var/lib/tarantool',
-    memtx_dir = '/var/lib/tarantool',
-    vinyl_dir = '/var/lib/tarantool',
-    log = '/var/log/tarantool.log',
-    background = false,
+box.cfg{
+    listen = '3301',
 }
 
+
+print("Starting initialization script init.lua")
+
 local function bootstrap()
+    if box.space.polls then box.space.polls:drop() end
+    if box.space.votes then box.space.votes:drop() end
+
     local polls = box.schema.space.create('polls', {
-        if_not_exists = true,
+        if_not_exists = false,
         format = {
             {name = 'id', type = 'string'},            -- ID голосования
             {name = 'question', type = 'string'},      -- Вопрос
@@ -25,6 +26,7 @@ local function bootstrap()
     -- По ID голосования (первичный)
     polls:create_index('primary', {
         type = 'HASH',
+        unique = true,
         parts = {'id'},
         if_not_exists = true
     })
@@ -32,6 +34,7 @@ local function bootstrap()
     -- По статусу и времени завершения (для автозавершения)
     polls:create_index('status_expires', {
         type = 'TREE',
+        unique = false,
         parts = {'status', 'expires_at'},
         if_not_exists = true
     })
@@ -39,6 +42,7 @@ local function bootstrap()
     -- По каналу (для списка голосований в канале)
     polls:create_index('channel', {
         type = 'TREE',
+        unique = false,
         parts = {'channel_id'},
         if_not_exists = true
     })
@@ -46,12 +50,13 @@ local function bootstrap()
     -- По создателю (для поиска своих голосований)
     polls:create_index('creator', {
         type = 'TREE',
+        unique = false,
         parts = {'created_by'},
         if_not_exists = true
     })
 
     local votes = box.schema.space.create('votes', {
-        if_not_exists = true,
+        if_not_exists = false,
         format = {
             {name = 'id', type = 'string'},           -- ID голоса
             {name = 'poll_id', type = 'string'},      -- ID голосования
@@ -64,6 +69,7 @@ local function bootstrap()
     -- По ID голоса (первичный)
     votes:create_index('primary', {
         type = 'HASH',
+        unique = true,
         parts = {'id'},
         if_not_exists = true
     })
@@ -71,6 +77,7 @@ local function bootstrap()
     -- По ID голосования (для подсчета всех голосов в опросе)
     votes:create_index('poll_id', {
         type = 'TREE',
+        unique = false,
         parts = {'poll_id'},
         if_not_exists = true
     })
