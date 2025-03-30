@@ -286,7 +286,7 @@ func (r *TarantoolRepository) AddVote(vote *model.Vote) error {
 
 	resp, err := r.conn.Do(tarantool.NewInsertRequest(r.spaceVotes).Tuple(vote.ToTarantoolTuple())).Get()
 	if err != nil {
-		return fmt.Errorf("error adding voice: %w", err)
+		return fmt.Errorf("error adding vote: %w", err)
 	}
 
 	log.Debug().
@@ -318,7 +318,7 @@ func (r *TarantoolRepository) GetVote(pollID, userID string) (*model.Vote, error
 
 	vote, err := model.VoteFromTarantoolTuple(resp[0].([]interface{}))
 	if err != nil {
-		return nil, fmt.Errorf("error converting voice data: %w", err)
+		return nil, fmt.Errorf("error converting vote data: %w", err)
 	}
 
 	return vote, nil
@@ -341,7 +341,7 @@ func (r *TarantoolRepository) GetVotesByPollID(pollID string) ([]*model.Vote, er
 	for _, tuple := range resp {
 		vote, err := model.VoteFromTarantoolTuple(tuple.([]interface{}))
 		if err != nil {
-			log.Error().Err(err).Msg("Error converting voice data")
+			log.Error().Err(err).Msg("Error converting vote data")
 			continue
 		}
 		votes = append(votes, vote)
