@@ -301,16 +301,16 @@ func (s *PollService) StartPollCleaner(ctx context.Context) {
 
 
 
+
+
 ## Команды Makefile
 
 ```bash
 # Сборка Docker-образов
-build:
-	docker-compose build
+make build
 
 # Сборка только образа бота
-build-bot:
-	docker-compose build poll-bot
+make build-bot
 
 # Запуск только бота и Tarantool
 make run
