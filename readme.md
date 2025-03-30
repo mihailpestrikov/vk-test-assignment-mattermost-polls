@@ -70,9 +70,10 @@ make dev
 ### Шаг 5: Создание токена для бота
 1. Перейдите в меню (левый верхний угол)
 2. Выберите "Integrations" - "Bot accounts"
-3. Нажмите "Create new token"
-4. Скопируйте созданный токен 
-5. Добавьте этот токен в файл `.env`
+3. По подсказке нужно разрешить создание бот-аккаунтов в System Console
+4. Нажмите "Add bot account", заполните поля, done
+5. Скопируйте созданный токен 
+6. Добавьте этот токен в файл `.env`
 
 ### Шаг 6: Настройка slash-команды
 1. Перейдите в "Slash commands"
@@ -104,15 +105,6 @@ make dev
 - `/poll info [poll_id]` - получение информации о голосовании
 - `/poll help` - получение справки
 
-Пример:
-```
-/poll create "Что выбрать для проекта?" "Go" "Rust" "Python"
-```
-
-После выполнения команды бот отобразит голосование со всеми вариантами ответов и уникальным идентификатором, который используется в других командах.
-
-
-
 ## Примеры использования бота
 
 ### Создание голосования
@@ -122,21 +114,7 @@ make dev
 ```
 
 Вывод:
-```
-### Какой язык программирования лучше для микросервисов?
-
-**Poll ID:** 5fa3d8e6-7b21-4f4a-9c5e-b7d58c9874a2
-
-1. Go
-2. Java
-3. Python
-4. Rust
-
-**How to vote:**
-Use `/poll vote 5fa3d8e6-7b21-4f4a-9c5e-b7d58c9874a2 NUMBER` to vote
-
-**Expires in:** 23 hours 59 minutes
-```
+![img.png](img/img.png)
 
 ### Голосование
 Команда:
@@ -145,9 +123,7 @@ Use `/poll vote 5fa3d8e6-7b21-4f4a-9c5e-b7d58c9874a2 NUMBER` to vote
 ```
 
 Вывод (виден только проголосовавшему):
-```
-Your vote for option 1: "Go" has been recorded.
-```
+![img_1.png](img/img_1.png)
 
 ### Просмотр результатов
 Команда:
@@ -156,24 +132,7 @@ Your vote for option 1: "Go" has been recorded.
 ```
 
 Вывод (для автора голосования - виден всем, для участника - только проголосовавшему:
-```
-### Results: Какой язык программирования лучше для микросервисов?
-
-**Poll ID:** 5fa3d8e6-7b21-4f4a-9c5e-b7d58c9874a2
-**Total votes:** 5
-
-**Status:** Active (Remaining time: 13 hours 45 minutes)
-
-1. **Go** - **3 votes** (60%)
-
-2. **Java** - **0 votes** (0%)
-
-3. **Python** - **1 votes** (20%)
-
-4. **Rust** - **1 votes** (20%)
-
-**To vote:** `/poll vote 5fa3d8e6-7b21-4f4a-9c5e-b7d58c9874a2 NUMBER`
-```
+![img_2.png](img/img_2.png)
 
 ### Завершение голосования
 Команда:
@@ -182,22 +141,7 @@ Your vote for option 1: "Go" has been recorded.
 ```
 
 Вывод:
-```
-### Poll Ended: Какой язык программирования лучше для микросервисов?
-
-**Poll ID:** 5fa3d8e6-7b21-4f4a-9c5e-b7d58c9874a2
-**Total votes:** 5
-
-**Winner:** Go with 3 votes
-
-1. **Go** - **3 votes** (60%)
-
-2. **Java** - **0 votes** (0%)
-
-3. **Python** - **1 votes** (20%)
-
-4. **Rust** - **1 votes** (20%)
-```
+![img_3.png](img/img_3.png)
 
 ### Информация о голосовании
 Команда:
@@ -206,23 +150,7 @@ Your vote for option 1: "Go" has been recorded.
 ```
 
 Вывод (только запросившему):
-```
-### Poll Information
-
-**Question:** Какой язык программирования лучше для микросервисов?
-
-**Poll ID:** 5fa3d8e6-7b21-4f4a-9c5e-b7d58c9874a2
-**Status:** CLOSED
-**Created by:** user123
-**Created at:** 2023-10-15 14:30:45
-**Expired at:** 2023-10-16 14:30:45
-
-**Options:**
-1. Go
-2. Java
-3. Python
-4. Rust
-```
+![img_4.png](img/img_4.png)
 
 ### Удаление голосования
 Команда:
@@ -231,9 +159,8 @@ Your vote for option 1: "Go" has been recorded.
 ```
 
 Вывод (виден только создателю):
-```
-Poll with ID `5fa3d8e6-7b21-4f4a-9c5e-b7d58c9874a2` has been deleted.
-```
+![img_5.png](img/img_5.png)
+![img_6.png](img/img_6.png)
 
 ### Справка по командам
 Команда:
@@ -391,6 +318,14 @@ undefined: Conn
 ## Команды Makefile
 
 ```bash
+# Сборка Docker-образов
+build:
+	docker-compose build
+
+# Сборка только образа бота
+build-bot:
+	docker-compose build poll-bot
+
 # Запуск только бота и Tarantool
 make run
 
