@@ -3,10 +3,11 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/net/context"
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/tarantool/go-tarantool"
+	"github.com/tarantool/go-tarantool/v2"
 
 	"vk-test-assignment-mattermost-polls/internal/model"
 	"vk-test-assignment-mattermost-polls/internal/service"
@@ -20,24 +21,24 @@ type TarantoolRepository struct {
 }
 
 func NewTarantoolRepository(cfg config.TarantoolConfig) (service.Repository, error) {
-	opts := tarantool.Opts{
-		User:      cfg.User,
-		Pass:      cfg.Pass,
-		Timeout:   5 * time.Second,
-		Reconnect: 1 * time.Second,
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+
+	dialer := tarantool.NetDialer{
+		Address: fmt.Sprintf("%s:%s", cfg.Host, cfg.Port),
+		User:    "guest",
 	}
 
-	conn, err := tarantool.Connect(fmt.Sprintf("%s:%s", cfg.Host, cfg.Port), opts)
+	conn, err := tarantool.Connect(ctx, dialer, tarantool.Opts{
+		Timeout:     5 * time.Second,
+		Concurrency: 32,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Tarantool: %w", err)
 	}
-
-	_, err = conn.Ping()
-	if err != nil {
-		return nil, fmt.Errorf("failed to ping Tarantool connection: %w", err)
+	if conn != nil {
+		log.Info().Msg("Connected to Tarantool successfully")
 	}
-
-	log.Info().Msg("Connected to Tarantool successfully")
 
 	return &TarantoolRepository{
 		conn:       conn,
@@ -47,7 +48,7 @@ func NewTarantoolRepository(cfg config.TarantoolConfig) (service.Repository, err
 }
 
 func (r *TarantoolRepository) CreatePoll(poll *model.Poll) error {
-	resp, err := r.conn.Insert(r.spacePolls, poll.ToTarantoolTuple())
+	resp, err := r.conn.Do(tarantool.NewInsertRequest(r.spacePolls).Tuple(poll.ToTarantoolTuple())).Get()
 	if err != nil {
 		return fmt.Errorf("error creating poll: %w", err)
 	}
@@ -62,16 +63,21 @@ func (r *TarantoolRepository) CreatePoll(poll *model.Poll) error {
 }
 
 func (r *TarantoolRepository) GetPoll(id string) (*model.Poll, error) {
-	resp, err := r.conn.Select(r.spacePolls, "primary", 0, 1, tarantool.IterEq, []interface{}{id})
+	resp, err := r.conn.Do(tarantool.NewSelectRequest(r.spacePolls).
+		Index("primary").
+		Offset(0).
+		Limit(1).
+		Iterator(tarantool.IterEq).
+		Key([]interface{}{id})).Get()
 	if err != nil {
 		return nil, fmt.Errorf("error getting poll: %w", err)
 	}
 
-	if len(resp.Data) == 0 {
+	if len(resp) == 0 {
 		return nil, model.ErrPollNotFound
 	}
 
-	poll, err := model.PollFromTarantoolTuple(resp.Data[0].([]interface{}))
+	poll, err := model.PollFromTarantoolTuple(resp[0].([]interface{}))
 	if err != nil {
 		return nil, fmt.Errorf("error converting poll data: %w", err)
 	}
@@ -93,13 +99,12 @@ func (r *TarantoolRepository) UpdatePollStatus(id string, status model.PollStatu
 
 	const statusIndex = 7
 
-	resp, err := r.conn.Update(
-		r.spacePolls,
-		"primary",
-		[]interface{}{id},
-		[]interface{}{[]interface{}{"=", statusIndex, string(status)}},
-	)
+	req := tarantool.NewUpdateRequest(r.spacePolls).
+		Index("primary").
+		Key([]interface{}{id}).
+		Operations(tarantool.NewOperations().Assign(statusIndex, string(status)))
 
+	resp, err := r.conn.Do(req).Get()
 	if err != nil {
 		return fmt.Errorf("error updating poll status: %w", err)
 	}
@@ -121,14 +126,13 @@ func (r *TarantoolRepository) DeletePoll(id string) error {
 func (r *TarantoolRepository) PurgeDeletedPolls(olderThan time.Duration) error {
 	cutoffTime := time.Now().Add(-olderThan).Unix()
 
-	resp, err := r.conn.Select(
-		r.spacePolls,
-		"status_expires",
-		0,
-		1000,
-		tarantool.IterEq,
-		[]interface{}{string(model.PollStatusDeleted)},
-	)
+	resp, err := r.conn.Do(tarantool.NewSelectRequest(r.spacePolls).
+		Index("status_expires").
+		Offset(0).
+		Limit(1000).
+		Iterator(tarantool.IterEq).
+		Key([]interface{}{string(model.PollStatusDeleted)})).
+		Get()
 
 	if err != nil {
 		return fmt.Errorf("error getting deleted polls: %w", err)
@@ -136,16 +140,20 @@ func (r *TarantoolRepository) PurgeDeletedPolls(olderThan time.Duration) error {
 
 	var purgedCount int
 
-	for _, tupleData := range resp.Data {
+	for _, tupleData := range resp {
 		poll, err := model.PollFromTarantoolTuple(tupleData.([]interface{}))
 		if err != nil {
 			continue
 		}
 
 		if poll.CreatedAt <= cutoffTime {
-			r.conn.Delete(r.spacePolls, "primary", []interface{}{poll.ID})
+			r.conn.Do(tarantool.NewDeleteRequest(r.spacePolls).
+				Index("primary").
+				Key([]interface{}{poll.ID}))
 
-			r.conn.Delete(r.spaceVotes, "poll_id", []interface{}{poll.ID})
+			r.conn.Do(tarantool.NewDeleteRequest(r.spaceVotes).
+				Index("poll_id").
+				Key([]interface{}{poll.ID}))
 
 			purgedCount++
 		}
@@ -160,21 +168,20 @@ func (r *TarantoolRepository) PurgeDeletedPolls(olderThan time.Duration) error {
 }
 
 func (r *TarantoolRepository) GetPollsByChannel(channelID string) ([]*model.Poll, error) {
-	resp, err := r.conn.Select(
-		r.spacePolls,
-		"channel",
-		0,
-		100,
-		tarantool.IterEq,
-		[]interface{}{channelID},
-	)
+	resp, err := r.conn.Do(tarantool.NewSelectRequest(r.spacePolls).
+		Index("channel").
+		Offset(0).
+		Limit(100).
+		Iterator(tarantool.IterEq).
+		Key([]interface{}{channelID})).
+		Get()
 
 	if err != nil {
 		return nil, fmt.Errorf("error getting channel polls: %w", err)
 	}
 
 	var polls []*model.Poll
-	for _, tuple := range resp.Data {
+	for _, tuple := range resp {
 		poll, err := model.PollFromTarantoolTuple(tuple.([]interface{}))
 		if err != nil {
 			log.Error().Err(err).Msg("Error converting poll data")
@@ -190,21 +197,20 @@ func (r *TarantoolRepository) GetPollsByChannel(channelID string) ([]*model.Poll
 }
 
 func (r *TarantoolRepository) GetPollsByCreator(userID string) ([]*model.Poll, error) {
-	resp, err := r.conn.Select(
-		r.spacePolls,
-		"creator",
-		0,
-		100,
-		tarantool.IterEq,
-		[]interface{}{userID},
-	)
+	resp, err := r.conn.Do(tarantool.NewSelectRequest(r.spacePolls).
+		Index("creator").
+		Offset(0).
+		Limit(100).
+		Iterator(tarantool.IterEq).
+		Key([]interface{}{userID})).
+		Get()
 
 	if err != nil {
 		return nil, fmt.Errorf("error getting user polls: %w", err)
 	}
 
 	var polls []*model.Poll
-	for _, tuple := range resp.Data {
+	for _, tuple := range resp {
 		poll, err := model.PollFromTarantoolTuple(tuple.([]interface{}))
 		if err != nil {
 			log.Error().Err(err).Msg("Error converting voting data")
@@ -222,21 +228,20 @@ func (r *TarantoolRepository) GetPollsByCreator(userID string) ([]*model.Poll, e
 func (r *TarantoolRepository) GetExpiredActivePolls() ([]*model.Poll, error) {
 	now := time.Now().Unix()
 
-	resp, err := r.conn.Select(
-		r.spacePolls,
-		"status_expires",
-		0,
-		100,
-		tarantool.IterLe,
-		[]interface{}{string(model.PollStatusActive), now},
-	)
+	resp, err := r.conn.Do(tarantool.NewSelectRequest(r.spacePolls).
+		Index("status_expires").
+		Offset(0).
+		Limit(100).
+		Iterator(tarantool.IterLe).
+		Key([]interface{}{string(model.PollStatusActive), now})).
+		Get()
 
 	if err != nil {
 		return nil, fmt.Errorf("error getting expired votes: %w", err)
 	}
 
 	var polls []*model.Poll
-	for _, tuple := range resp.Data {
+	for _, tuple := range resp {
 		poll, err := model.PollFromTarantoolTuple(tuple.([]interface{}))
 		if err != nil {
 			log.Error().Err(err).Msg("Error converting voting data")
@@ -279,7 +284,7 @@ func (r *TarantoolRepository) AddVote(vote *model.Vote) error {
 		return model.ErrInvalidOption
 	}
 
-	resp, err := r.conn.Insert(r.spaceVotes, vote.ToTarantoolTuple())
+	resp, err := r.conn.Do(tarantool.NewInsertRequest(r.spaceVotes).Tuple(vote.ToTarantoolTuple())).Get()
 	if err != nil {
 		return fmt.Errorf("error adding voice: %w", err)
 	}
@@ -289,30 +294,29 @@ func (r *TarantoolRepository) AddVote(vote *model.Vote) error {
 		Str("poll_id", vote.PollID).
 		Str("user_id", vote.UserID).
 		Interface("response", resp).
-		Msg("Голос добавлен успешно")
+		Msg("Vote added successfully")
 
 	return nil
 }
 
 func (r *TarantoolRepository) GetVote(pollID, userID string) (*model.Vote, error) {
-	resp, err := r.conn.Select(
-		r.spaceVotes,
-		"user_poll",
-		0,
-		1,
-		tarantool.IterEq,
-		[]interface{}{userID, pollID},
-	)
+	resp, err := r.conn.Do(tarantool.NewSelectRequest(r.spaceVotes).
+		Index("user_poll").
+		Offset(0).
+		Limit(1).
+		Iterator(tarantool.IterEq).
+		Key([]interface{}{userID, pollID})).
+		Get()
 
 	if err != nil {
 		return nil, fmt.Errorf("error receiving vote: %w", err)
 	}
 
-	if len(resp.Data) == 0 {
+	if len(resp) == 0 {
 		return nil, model.ErrVoteNotFound
 	}
 
-	vote, err := model.VoteFromTarantoolTuple(resp.Data[0].([]interface{}))
+	vote, err := model.VoteFromTarantoolTuple(resp[0].([]interface{}))
 	if err != nil {
 		return nil, fmt.Errorf("error converting voice data: %w", err)
 	}
@@ -321,21 +325,20 @@ func (r *TarantoolRepository) GetVote(pollID, userID string) (*model.Vote, error
 }
 
 func (r *TarantoolRepository) GetVotesByPollID(pollID string) ([]*model.Vote, error) {
-	resp, err := r.conn.Select(
-		r.spaceVotes,
-		"poll_id",
-		0,
-		1000,
-		tarantool.IterEq,
-		[]interface{}{pollID},
-	)
+	resp, err := r.conn.Do(tarantool.NewSelectRequest(r.spaceVotes).
+		Index("poll_id").
+		Offset(0).
+		Limit(1000).
+		Iterator(tarantool.IterEq).
+		Key([]interface{}{pollID})).
+		Get()
 
 	if err != nil {
 		return nil, fmt.Errorf("error receiving votes: %w", err)
 	}
 
 	var votes []*model.Vote
-	for _, tuple := range resp.Data {
+	for _, tuple := range resp {
 		vote, err := model.VoteFromTarantoolTuple(tuple.([]interface{}))
 		if err != nil {
 			log.Error().Err(err).Msg("Error converting voice data")
