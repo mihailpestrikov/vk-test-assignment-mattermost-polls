@@ -25,7 +25,7 @@ clean:
 test-cover:
 	go test ./internal/api ./internal/model ./internal/service ./pkg/mattermost -coverprofile=
 
-# Запуск линтера для всех пакетов кроме repository
+# Запуск линтера
 lint:
-	golangci-lint run ./internal/api/... ./internal/model/... ./internal/service/... ./pkg/...
+	golangci-lint run
 
