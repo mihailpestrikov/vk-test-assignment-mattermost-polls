@@ -150,7 +150,7 @@ make dev
 ```
 
 Вывод (только запросившему):
-<br><img src="img/img_4.png" width="600">
+<br><img src="img/img_4.png" width="550">
 
 ### Удаление голосования
 Команда:
