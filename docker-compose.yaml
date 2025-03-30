@@ -8,8 +8,9 @@ services:
     environment:
       - TARANTOOL_HOST=tarantool
       - TARANTOOL_PORT=3301
-      - MATTERMOST_URL=${MATTERMOST_URL:-http://mattermost:8065}
+      - TARANTOOL_PASS=testpass
       - MATTERMOST_TOKEN=${MATTERMOST_TOKEN}
+      - MATTERMOST_WEBHOOK_SECRET=${MATTERMOST_WEBHOOK_SECRET}
     ports:
       - "8080:8080"
     volumes:
