@@ -1,0 +1,216 @@
+openapi: 3.0.0
+info:
+  title: Mattermost Voting Bot API
+  description: API для бота голосований в Mattermost
+  version: 1.0.0
+
+paths:
+  /command:
+    post:
+      summary: Обработка команд Mattermost
+      description: Обработка всех slash-команд от Mattermost
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - token
+                - team_id
+                - channel_id
+                - user_id
+                - command
+                - text
+              properties:
+                token:
+                  type: string
+                  description: Токен верификации от Mattermost
+                team_id:
+                  type: string
+                  description: ID команды Mattermost
+                team_domain:
+                  type: string
+                  description: Домен команды Mattermost
+                channel_id:
+                  type: string
+                  description: ID канала, из которого отправлена команда
+                channel_name:
+                  type: string
+                  description: Название канала
+                user_id:
+                  type: string
+                  description: ID пользователя, отправившего команду
+                user_name:
+                  type: string
+                  description: Имя пользователя, отправившего команду
+                command:
+                  type: string
+                  description: Slash-команда (например, /poll)
+                text:
+                  type: string
+                  description: Текст, следующий за командой (например, create "Вопрос" "Вариант1" "Вариант2")
+                response_url:
+                  type: string
+                  description: URL для отправки отложенных ответов
+                trigger_id:
+                  type: string
+                  description: ID триггера для интерактивных диалогов
+      responses:
+        '200':
+          description: Успешный ответ на команду
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/CreatePollResponse'
+                  - $ref: '#/components/schemas/VoteResponse'
+                  - $ref: '#/components/schemas/ResultsResponse'
+                  - $ref: '#/components/schemas/EndPollResponse'
+                  - $ref: '#/components/schemas/DeletePollResponse'
+        '400':
+          description: Неправильный формат команды
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Недействительный токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Недостаточно прав для выполнения операции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Голосование не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - response_type
+        - text
+      properties:
+        response_type:
+          type: string
+          enum: [ephemeral]
+          default: ephemeral
+          description: Тип ответа (видит только отправитель)
+        text:
+          type: string
+          description: Текст сообщения об ошибке
+
+    CreatePollResponse:
+      type: object
+      required:
+        - response_type
+        - text
+      properties:
+        response_type:
+          type: string
+          enum: [ephemeral, in_channel]
+          default: in_channel
+          description: Тип ответа (in_channel - видят все в канале)
+        text:
+          type: string
+          description: Текст с созданным голосованием
+        props:
+          type: object
+          description: Дополнительные свойства сообщения
+          properties:
+            attachments:
+              type: array
+              items:
+                type: object
+
+    VoteResponse:
+      type: object
+      required:
+        - response_type
+        - text
+      properties:
+        response_type:
+          type: string
+          enum: [ephemeral, in_channel]
+          default: ephemeral
+          description: Тип ответа (ephemeral - видит только отправитель)
+        text:
+          type: string
+          description: Подтверждение голоса
+
+    ResultsResponse:
+      type: object
+      required:
+        - response_type
+        - text
+      properties:
+        response_type:
+          type: string
+          enum: [ephemeral, in_channel]
+          default: in_channel
+          description: Тип ответа (in_channel - видят все в канале)
+        text:
+          type: string
+          description: Результаты голосования
+        props:
+          type: object
+          description: Дополнительные свойства сообщения
+          properties:
+            attachments:
+              type: array
+              items:
+                type: object
+
+    EndPollResponse:
+      type: object
+      required:
+        - response_type
+        - text
+      properties:
+        response_type:
+          type: string
+          enum: [ephemeral, in_channel]
+          default: in_channel
+          description: Тип ответа (in_channel - видят все в канале)
+        text:
+          type: string
+          description: Финальные результаты завершенного голосования
+        props:
+          type: object
+          description: Дополнительные свойства сообщения
+          properties:
+            attachments:
+              type: array
+              items:
+                type: object
+
+    DeletePollResponse:
+      type: object
+      required:
+        - response_type
+        - text
+      properties:
+        response_type:
+          type: string
+          enum: [ephemeral, in_channel]
+          default: in_channel
+          description: Тип ответа (in_channel - видят все в канале)
+        text:
+          type: string
+          description: Подтверждение удаления голосования
