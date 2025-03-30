@@ -15,7 +15,7 @@ import (
 func Setup(cfg config.LoggerConfig) {
 	level, err := zerolog.ParseLevel(strings.ToLower(cfg.Level))
 	if err != nil {
-		level = zerolog.InfoLevel
+		level = zerolog.DebugLevel
 	}
 	zerolog.SetGlobalLevel(level)
 
