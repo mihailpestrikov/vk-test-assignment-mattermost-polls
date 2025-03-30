@@ -17,17 +17,14 @@ const (
 )
 
 var (
-	ErrPollNotFound     = errors.New("poll not found")
-	ErrPollClosed       = errors.New("poll is already closed")
-	ErrPollDeleted      = errors.New("poll has been deleted")
-	ErrInvalidPollID    = errors.New("invalid poll ID")
-	ErrInvalidOption    = errors.New("invalid option")
-	ErrEmptyQuestion    = errors.New("question cannot be empty")
-	ErrTooFewOptions    = errors.New("at least 2 options are required")
-	ErrTooManyOptions   = errors.New("too many options")
-	ErrNotPollCreator   = errors.New("only the poll creator can perform this action")
-	ErrDuplicateOption  = errors.New("duplicate options detected")
-	ErrPermissionDenied = errors.New("permission denied")
+	ErrPollNotFound    = errors.New("poll not found")
+	ErrPollClosed      = errors.New("poll is already closed")
+	ErrInvalidOption   = errors.New("invalid option")
+	ErrEmptyQuestion   = errors.New("question cannot be empty")
+	ErrTooFewOptions   = errors.New("at least 2 options are required")
+	ErrTooManyOptions  = errors.New("too many options")
+	ErrNotPollCreator  = errors.New("only the poll creator can perform this action")
+	ErrDuplicateOption = errors.New("duplicate options detected")
 )
 
 type Poll struct {

@@ -8,10 +8,8 @@ import (
 )
 
 var (
-	ErrAlreadyVoted     = errors.New("you have already voted in this poll")
-	ErrVoteNotFound     = errors.New("vote not found")
-	ErrInvalidVoteID    = errors.New("invalid vote ID")
-	ErrVoteCreateFailed = errors.New("failed to create vote")
+	ErrAlreadyVoted = errors.New("you have already voted in this poll")
+	ErrVoteNotFound = errors.New("vote not found")
 )
 
 type Vote struct {
