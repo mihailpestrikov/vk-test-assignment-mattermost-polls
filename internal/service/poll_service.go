@@ -27,6 +27,15 @@ type VoteResults struct {
 	RemainingTime string            `json:"remaining_time,omitempty"`
 }
 
+type IPollService interface {
+	CreatePoll(question string, options []string, createdBy, channelID string, duration int) (*model.Poll, error)
+	GetPoll(id string) (*model.Poll, error)
+	Vote(pollID, userID string, optionIdx int) error
+	GetResults(pollID string) (*VoteResults, error)
+	EndPoll(pollID, userID string) (*VoteResults, error)
+	DeletePoll(pollID, userID string) error
+}
+
 type PollService struct {
 	repo       Repository
 	pollConfig config.PollConfig
