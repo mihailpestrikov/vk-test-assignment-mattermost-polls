@@ -42,6 +42,11 @@ func main() {
 		Str("port", cfg.Server.Port).
 		Msg("Starting application")
 
+	log.Debug().
+		Str("token", cfg.Mattermost.Token).
+		Str("secret", cfg.Mattermost.WebhookSecret).
+		Msg("Mattermost webhook secret")
+
 	repo, err := repository.NewTarantoolRepository(cfg.Tarantool)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to initialize repository")
