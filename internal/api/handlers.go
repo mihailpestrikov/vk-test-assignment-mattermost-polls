@@ -16,6 +16,23 @@ import (
 	"vk-test-assignment-mattermost-polls/pkg/mattermost"
 )
 
+var userFriendlyErrors = map[error]string{
+	model.ErrPollNotFound:            "The poll you're looking for doesn't exist. Please check the ID and try again.",
+	model.ErrPollClosed:              "This poll has already been closed and is no longer accepting votes.",
+	model.ErrInvalidOption:           "The option you selected is not valid for this poll.",
+	model.ErrEmptyQuestion:           "The poll question cannot be empty. Please provide a question.",
+	model.ErrTooFewOptions:           "A poll needs at least 2 options. Please add more options.",
+	model.ErrTooManyOptions:          "You've added too many options to this poll. Please reduce the number of options.",
+	model.ErrNotPollCreator:          "Only the creator of the poll can perform this action.",
+	model.ErrDuplicateOption:         "Each option must be unique. Please remove duplicate options.",
+	model.ErrAlreadyVoted:            "You have already voted in this poll. One vote per person!",
+	model.ErrVoteNotFound:            "Your vote was not found for this poll.",
+	mattermost.ErrInvalidSubCommand:  "The command you entered is not recognized. Use `/poll help` to see available commands.",
+	mattermost.ErrMissingPollID:      "Please specify a poll ID with your command.",
+	mattermost.ErrMissingOptionIndex: "Please specify which option you want to vote for.",
+	mattermost.ErrInvalidDuration:    "The duration format is incorrect. Use --duration=SECONDS (e.g., --duration=3600 for 1 hour).",
+}
+
 type Handler struct {
 	pollService      service.IPollService
 	mattermostCfg    config.MattermostConfig
@@ -31,7 +48,7 @@ func NewHandler(pollService *service.PollService, mattermostCfg config.Mattermos
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
-	r.Get("/health", h.healthCheck) // Добавляем endpoint для проверки здоровья
+	r.Get("/health", h.healthCheck)
 	r.Post("/command", h.handleCommand)
 }
 
@@ -85,7 +102,7 @@ func (h *Handler) handleCommand(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to parse form data")
 		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, mattermost.FormatError(errors.New("invalid request format")))
+		render.JSON(w, r, mattermost.FormatError(errors.New("We couldn't process your command. Please try again.")))
 		return
 	}
 
@@ -106,7 +123,7 @@ func (h *Handler) handleCommand(w http.ResponseWriter, r *http.Request) {
 	if err := validate.Struct(req); err != nil {
 		log.Error().Err(err).Msg("Invalid request structure")
 		render.Status(r, http.StatusBadRequest)
-		render.JSON(w, r, mattermost.FormatError(errors.New("invalid request parameters")))
+		render.JSON(w, r, mattermost.FormatError(errors.New("Some required information is missing. Please try again with a complete command.")))
 		return
 	}
 
@@ -116,7 +133,7 @@ func (h *Handler) handleCommand(w http.ResponseWriter, r *http.Request) {
 			Str("expected_token", h.mattermostCfg.WebhookSecret).
 			Msg("Invalid webhook token")
 		render.Status(r, http.StatusUnauthorized)
-		render.JSON(w, r, mattermost.FormatError(errors.New("invalid token")))
+		render.JSON(w, r, mattermost.FormatError(errors.New("Authentication failed. Please contact your system administrator.")))
 		return
 	}
 
@@ -130,7 +147,7 @@ func (h *Handler) handleCommand(w http.ResponseWriter, r *http.Request) {
 	cmd, err := mattermost.ParseCommand(req.Text)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to parse command")
-		render.JSON(w, r, mattermost.FormatError(err))
+		render.JSON(w, r, mattermost.FormatError(errors.New(getUserFriendlyError(err))))
 		return
 	}
 
@@ -158,7 +175,7 @@ func (h *Handler) handleCommand(w http.ResponseWriter, r *http.Request) {
 
 	default:
 		log.Error().Str("subcommand", cmd.SubCommand).Msg("Unknown subcommand")
-		render.JSON(w, r, mattermost.FormatError(errors.New("unknown command")))
+		render.JSON(w, r, mattermost.FormatError(errors.New("Unknown command. Type `/poll help` to see available commands.")))
 	}
 }
 
@@ -166,7 +183,7 @@ func (h *Handler) handleCreateCommand(w http.ResponseWriter, r *http.Request, re
 	poll, err := h.pollService.CreatePoll(cmd.Question, cmd.Options, req.UserID, req.ChannelID, cmd.Duration)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to create poll")
-		render.JSON(w, r, mattermost.FormatError(err))
+		render.JSON(w, r, mattermost.FormatError(errors.New(getUserFriendlyError(err))))
 		return
 	}
 
@@ -183,7 +200,7 @@ func (h *Handler) handleVoteCommand(w http.ResponseWriter, r *http.Request, req 
 	poll, err := h.pollService.GetPoll(cmd.PollID)
 	if err != nil {
 		log.Error().Err(err).Str("poll_id", cmd.PollID).Msg("Failed to get poll")
-		render.JSON(w, r, mattermost.FormatError(err))
+		render.JSON(w, r, mattermost.FormatError(errors.New(getUserFriendlyError(err))))
 		return
 	}
 
@@ -194,7 +211,7 @@ func (h *Handler) handleVoteCommand(w http.ResponseWriter, r *http.Request, req 
 			Str("user_id", req.UserID).
 			Int("option_idx", cmd.OptionIdx).
 			Msg("Failed to vote")
-		render.JSON(w, r, mattermost.FormatError(err))
+		render.JSON(w, r, mattermost.FormatError(errors.New(getUserFriendlyError(err))))
 		return
 	}
 
@@ -211,14 +228,14 @@ func (h *Handler) handleResultsCommand(w http.ResponseWriter, r *http.Request, r
 	results, err := h.pollService.GetResults(cmd.PollID)
 	if err != nil {
 		log.Error().Err(err).Str("poll_id", cmd.PollID).Msg("Failed to get poll results")
-		render.JSON(w, r, mattermost.FormatError(err))
+		render.JSON(w, r, mattermost.FormatError(errors.New(getUserFriendlyError(err))))
 		return
 	}
 
 	poll, err := h.pollService.GetPoll(cmd.PollID)
 	if err != nil {
 		log.Error().Err(err).Str("poll_id", cmd.PollID).Msg("Failed to get poll")
-		render.JSON(w, r, mattermost.FormatError(err))
+		render.JSON(w, r, mattermost.FormatError(errors.New(getUserFriendlyError(err))))
 		return
 	}
 
@@ -242,12 +259,12 @@ func (h *Handler) handleEndCommand(w http.ResponseWriter, r *http.Request, req d
 				Str("poll_id", cmd.PollID).
 				Str("user_id", req.UserID).
 				Msg("Unauthorized attempt to end poll")
-			render.JSON(w, r, mattermost.FormatError(err))
+			render.JSON(w, r, mattermost.FormatError(errors.New(getUserFriendlyError(err))))
 			return
 		}
 
 		log.Error().Err(err).Str("poll_id", cmd.PollID).Msg("Failed to end poll")
-		render.JSON(w, r, mattermost.FormatError(err))
+		render.JSON(w, r, mattermost.FormatError(errors.New(getUserFriendlyError(err))))
 		return
 	}
 
@@ -268,12 +285,12 @@ func (h *Handler) handleDeleteCommand(w http.ResponseWriter, r *http.Request, re
 				Str("poll_id", cmd.PollID).
 				Str("user_id", req.UserID).
 				Msg("Unauthorized attempt to delete poll")
-			render.JSON(w, r, mattermost.FormatError(err))
+			render.JSON(w, r, mattermost.FormatError(errors.New(getUserFriendlyError(err))))
 			return
 		}
 
 		log.Error().Err(err).Str("poll_id", cmd.PollID).Msg("Failed to delete poll")
-		render.JSON(w, r, mattermost.FormatError(err))
+		render.JSON(w, r, mattermost.FormatError(errors.New(getUserFriendlyError(err))))
 		return
 	}
 
@@ -289,7 +306,7 @@ func (h *Handler) handleInfoCommand(w http.ResponseWriter, r *http.Request, req 
 	poll, err := h.pollService.GetPoll(cmd.PollID)
 	if err != nil {
 		log.Error().Err(err).Str("poll_id", cmd.PollID).Msg("Failed to get poll")
-		render.JSON(w, r, mattermost.FormatError(err))
+		render.JSON(w, r, mattermost.FormatError(errors.New(getUserFriendlyError(err))))
 		return
 	}
 
@@ -307,4 +324,19 @@ func (h *Handler) handleHelpCommand(w http.ResponseWriter, r *http.Request, req 
 		Msg("Help requested")
 
 	render.JSON(w, r, mattermost.FormatHelp())
+}
+
+func getUserFriendlyError(err error) string {
+	if friendlyMsg, exists := userFriendlyErrors[err]; exists {
+		return friendlyMsg
+	}
+
+	var unwrappedErr error
+	if errors.As(err, &unwrappedErr) {
+		if friendlyMsg, exists := userFriendlyErrors[unwrappedErr]; exists {
+			return friendlyMsg
+		}
+	}
+
+	return err.Error()
 }
