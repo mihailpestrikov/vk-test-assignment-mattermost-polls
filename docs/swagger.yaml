@@ -1,0 +1,106 @@
+basePath: /
+definitions:
+  dto.MattermostResponse:
+    properties:
+      props: {}
+      response_type:
+        type: string
+      text:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    name: t.me/mpstrkv
+  description: API для бота голосований в Mattermost, поддерживающее создание и управление
+    голосованиями в чатах.
+  title: Mattermost Voting Bot API
+  version: "1.0"
+paths:
+  /command:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: Обработка всех slash-команд от Mattermost
+      operationId: process-command
+      parameters:
+      - description: Токен верификации от Mattermost
+        in: formData
+        name: token
+        required: true
+        type: string
+      - description: ID команды Mattermost
+        in: formData
+        name: team_id
+        required: true
+        type: string
+      - description: Домен команды Mattermost
+        in: formData
+        name: team_domain
+        type: string
+      - description: ID канала, из которого отправлена команда
+        in: formData
+        name: channel_id
+        required: true
+        type: string
+      - description: Название канала
+        in: formData
+        name: channel_name
+        type: string
+      - description: ID пользователя, отправившего команду
+        in: formData
+        name: user_id
+        required: true
+        type: string
+      - description: Имя пользователя, отправившего команду
+        in: formData
+        name: user_name
+        type: string
+      - description: Slash-команда (например, /poll)
+        in: formData
+        name: command
+        required: true
+        type: string
+      - description: Текст, следующий за командой
+        in: formData
+        name: text
+        type: string
+      - description: URL для отправки отложенных ответов
+        in: formData
+        name: response_url
+        type: string
+      - description: ID триггера для интерактивных диалогов
+        in: formData
+        name: trigger_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ на команду
+          schema:
+            $ref: '#/definitions/dto.MattermostResponse'
+        "400":
+          description: Неправильный формат команды
+          schema:
+            $ref: '#/definitions/dto.MattermostResponse'
+        "401":
+          description: Недействительный токен
+          schema:
+            $ref: '#/definitions/dto.MattermostResponse'
+        "403":
+          description: Недостаточно прав для выполнения операции
+          schema:
+            $ref: '#/definitions/dto.MattermostResponse'
+        "404":
+          description: Голосование не найдено
+          schema:
+            $ref: '#/definitions/dto.MattermostResponse'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/dto.MattermostResponse'
+      summary: Обработка команд Mattermost
+      tags:
+      - Команды
+swagger: "2.0"

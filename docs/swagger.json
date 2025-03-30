@@ -1,0 +1,156 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API для бота голосований в Mattermost, поддерживающее создание и управление голосованиями в чатах.",
+        "title": "Mattermost Voting Bot API",
+        "contact": {
+            "name": "t.me/mpstrkv"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/command": {
+            "post": {
+                "description": "Обработка всех slash-команд от Mattermost",
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Команды"
+                ],
+                "summary": "Обработка команд Mattermost",
+                "operationId": "process-command",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Токен верификации от Mattermost",
+                        "name": "token",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID команды Mattermost",
+                        "name": "team_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Домен команды Mattermost",
+                        "name": "team_domain",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID канала, из которого отправлена команда",
+                        "name": "channel_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Название канала",
+                        "name": "channel_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID пользователя, отправившего команду",
+                        "name": "user_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Имя пользователя, отправившего команду",
+                        "name": "user_name",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Slash-команда (например, /poll)",
+                        "name": "command",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Текст, следующий за командой",
+                        "name": "text",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "URL для отправки отложенных ответов",
+                        "name": "response_url",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID триггера для интерактивных диалогов",
+                        "name": "trigger_id",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешный ответ на команду",
+                        "schema": {
+                            "$ref": "#/definitions/dto.MattermostResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неправильный формат команды",
+                        "schema": {
+                            "$ref": "#/definitions/dto.MattermostResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Недействительный токен",
+                        "schema": {
+                            "$ref": "#/definitions/dto.MattermostResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Недостаточно прав для выполнения операции",
+                        "schema": {
+                            "$ref": "#/definitions/dto.MattermostResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Голосование не найдено",
+                        "schema": {
+                            "$ref": "#/definitions/dto.MattermostResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/dto.MattermostResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dto.MattermostResponse": {
+            "type": "object",
+            "properties": {
+                "props": {},
+                "response_type": {
+                    "type": "string"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}
