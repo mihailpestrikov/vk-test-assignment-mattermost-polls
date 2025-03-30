@@ -141,7 +141,7 @@ make dev
 ```
 
 Вывод:
-<br><img src="img/img_3.png" width="600">
+<br><img src="img/img_3.png" width="650">
 
 ### Информация о голосовании
 Команда:
