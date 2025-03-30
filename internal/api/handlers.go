@@ -31,7 +31,29 @@ func NewHandler(pollService *service.PollService, mattermostCfg config.Mattermos
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
+	r.Get("/health", h.healthCheck) // Добавляем endpoint для проверки здоровья
 	r.Post("/command", h.handleCommand)
+}
+
+type HealthCheckResponse struct {
+	Status  string `json:"status"`
+	Version string `json:"version"`
+}
+
+// @Summary Проверка здоровья сервиса
+// @Description Проверяет доступность сервиса
+// @ID health-check
+// @Produce json
+// @Tags Сервис
+// @Success 200 {object} HealthCheckResponse
+// @Router /health [get]
+func (h *Handler) healthCheck(w http.ResponseWriter, r *http.Request) {
+	response := HealthCheckResponse{
+		Status:  "available",
+		Version: "1.0.0",
+	}
+
+	render.JSON(w, r, response)
 }
 
 // @Summary Обработка команд Mattermost
@@ -91,6 +113,7 @@ func (h *Handler) handleCommand(w http.ResponseWriter, r *http.Request) {
 	if req.Token != h.mattermostCfg.WebhookSecret {
 		log.Warn().
 			Str("received_token", req.Token).
+			Str("expected_token", h.mattermostCfg.WebhookSecret).
 			Msg("Invalid webhook token")
 		render.Status(r, http.StatusUnauthorized)
 		render.JSON(w, r, mattermost.FormatError(errors.New("invalid token")))
