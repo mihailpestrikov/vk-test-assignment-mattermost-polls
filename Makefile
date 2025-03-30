@@ -13,3 +13,10 @@ stop:
 # Полная очистка
 clean:
 	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml down -v
+
+test-cover:
+	go test ./internal/api ./internal/model ./internal/service ./pkg/mattermost -coverprofile=
+
+# Запуск линтера
+lint:
+	golangci-lint run
