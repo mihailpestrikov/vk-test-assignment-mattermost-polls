@@ -2,6 +2,7 @@ package model
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -45,15 +46,14 @@ func VoteFromTarantoolTuple(tuple []interface{}) (*Vote, error) {
 		return nil, errors.New("not enough data in tuple")
 	}
 
-	optionIdx, ok := tuple[3].(int64)
-	if !ok {
-		if idx, ok := tuple[3].(int); ok {
-			optionIdx = int64(idx)
-		} else if idx, ok := tuple[3].(float64); ok {
-			optionIdx = int64(idx)
-		} else {
-			return nil, errors.New("invalid option index type")
-		}
+	var optionIdx int
+	switch v := tuple[3].(type) {
+	case int:
+		optionIdx = v
+	case int8:
+		optionIdx = int(v)
+	default:
+		return nil, fmt.Errorf("unexpected option index type: %T", v)
 	}
 
 	return &Vote{
