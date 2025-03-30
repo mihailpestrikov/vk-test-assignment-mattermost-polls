@@ -19,7 +19,7 @@ func Setup(cfg config.LoggerConfig) {
 	}
 	zerolog.SetGlobalLevel(level)
 
-	var output io.Writer
+	var output io.Writer = os.Stdout
 
 	if cfg.Output == "file" && cfg.File != "" {
 		file, err := os.OpenFile(cfg.File, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
