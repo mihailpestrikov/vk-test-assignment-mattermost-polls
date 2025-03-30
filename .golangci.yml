@@ -1,0 +1,40 @@
+linters:
+  enable:
+    - gofmt
+    - goimports
+    - govet
+    - gosimple
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+    - misspell
+    - revive
+
+linters-settings:
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes: vk-test-assignment-mattermost-polls
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - disableStutteringCheck
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - dupl
+  exclude-dirs:
+    - vendor
+  exclude-dirs-use-default: false
+  exclude-files:
+    - ".*tarantool.go$"
+
+run:
+  timeout: 5m
+  tests: true
