@@ -159,7 +159,7 @@ make dev
 ```
 
 Вывод (виден только создателю):
-<br><img src="img/img_5.png" width="600"><br>
+<br><img src="img/img_5.png" width="500"><br>
 <img src="img/img_6.png" width="600">
 
 ### Справка по командам
