@@ -51,7 +51,7 @@ MATTERMOST_URL=http://mattermost:8065
 MATTERMOST_TOKEN=
 MATTERMOST_WEBHOOK_SECRET=
 
-DEFAULT_POLL_DURATION=86400
+DEFAULT_POLL_DURATION=86600
 MAX_OPTIONS=10
 ```
 *(значения MATTERMOST_TOKEN и MATTERMOST_WEBHOOK_SECRET будут заполнены позже)*
@@ -110,11 +110,11 @@ make dev
 ### Создание голосования
 Команда:
 ```
-/poll create "Какой язык программирования лучше для микросервисов?" "Go" "Java" "Python" "Rust" --duration=86400
+/poll create "Какой язык программирования лучше для микросервисов?" "Go" "Java" "Python" "Rust" --duration=86600
 ```
 
 Вывод:
-<br><img src="img/img.png" width="400">
+<br><img src="img/img.png" width="600">
 
 ### Голосование
 Команда:
@@ -132,7 +132,7 @@ make dev
 ```
 
 Вывод (для автора голосования - виден всем, для участника - только проголосовавшему:
-<br><img src="img/img_2.png" width="400">
+<br><img src="img/img_2.png" width="600">
 
 ### Завершение голосования
 Команда:
@@ -141,7 +141,7 @@ make dev
 ```
 
 Вывод:
-<br><img src="img/img_3.png" width="400">
+<br><img src="img/img_3.png" width="600">
 
 ### Информация о голосовании
 Команда:
@@ -150,7 +150,7 @@ make dev
 ```
 
 Вывод (только запросившему):
-<br><img src="img/img_4.png" width="400">
+<br><img src="img/img_4.png" width="600">
 
 ### Удаление голосования
 Команда:
@@ -159,8 +159,8 @@ make dev
 ```
 
 Вывод (виден только создателю):
-<br><img src="img/img_5.png" width="400"><br>
-<img src="img/img_6.png" width="400">
+<br><img src="img/img_5.png" width="600"><br>
+<img src="img/img_6.png" width="600">
 
 ### Справка по командам
 Команда:
@@ -172,7 +172,7 @@ make dev
 ```
 Available commands:
 
-/poll create "Question" "Option 1" "Option 2" [--duration=86400]
+/poll create "Question" "Option 1" "Option 2" [--duration=86600]
     Create a new poll with specified options and optional duration in seconds
 
 /poll vote POLL_ID OPTION_NUMBER
